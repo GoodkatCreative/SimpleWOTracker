@@ -1,0 +1,5 @@
+{
+  "name": "Full-Body Workout Tracker",
+  "description": "A simple, responsive web app to track a 2x/week full-body workout plan. It features two distinct workouts (A and B) with checklists for each exercise, progress tracking, and local storage persistence to save your progress between sessions.",
+  "requestFramePermissions": []
+}
