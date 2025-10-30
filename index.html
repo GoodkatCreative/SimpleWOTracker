@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,18 +7,404 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Full-Body Workout Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-  <script type="importmap">
+    <!-- Use React from CDN -->
+    <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
   }
 }
 </script>
+    <!-- Add Babel Standalone to transpile JSX/TSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-  <body class="bg-gray-900 text-white">
+  <body class="bg-gray-900 text-white font-sans">
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+    <!-- 
+      Set script type to "text/babel" and data-type="module"
+      All component and application logic is now contained within this single script tag.
+    -->
+    <script type="text/babel" data-type="module">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+// All code from .ts/.tsx files is combined here, with imports/exports removed.
+
+// --- From hooks/useLocalStorage.ts ---
+const { useState, useEffect, useMemo } = React;
+
+const useLocalStorage = (key, initialValue) => {
+  const readValue = () => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.warn(`Error reading localStorage key “${key}”:`, error);
+      return initialValue;
+    }
+  };
+
+  const [storedValue, setStoredValue] = useState(readValue);
+
+  const setValue = (value) => {
+    if (typeof window === 'undefined') {
+      console.warn(
+        `Tried setting localStorage key “${key}” even though environment is not a client`,
+      );
+    }
+    
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.warn(`Error setting localStorage key “${key}”:`, error);
+    }
+  };
+
+  useEffect(() => {
+    setStoredValue(readValue());
+  }, []);
+
+  return [storedValue, setValue];
+};
+
+// --- From constants.ts ---
+const WORKOUT_A = {
+  id: 'A',
+  name: 'Workout A',
+  title: 'Push + Quads/Calves',
+  supersets: [
+    {
+      title: 'Superset 1: Chest ↔ Back',
+      exercises: [
+        { id: 'a-chest-press', name: 'Chest Press Machine', setsReps: '3–4 × 8–12' },
+        { id: 'a-seated-row-1', name: 'Seated Row', setsReps: '3 × 8–12' },
+      ],
+    },
+    {
+      title: 'Superset 2: Shoulders ↔ Lats',
+      exercises: [
+        { id: 'a-shoulder-press', name: 'Shoulder Press Machine', setsReps: '3 × 8–12' },
+        { id: 'a-lat-pulldown', name: 'Lat Pulldown Machine', setsReps: '3 × 8–12' },
+      ],
+    },
+    {
+      title: 'Superset 3: Lateral Raise ↔ Rear Delt',
+      exercises: [
+        { id: 'a-lateral-raise', name: 'Lateral Raise Machine', setsReps: '3 × 12–15' },
+        { id: 'a-rear-delt', name: 'Rear Delt Reverse Pec Deck', setsReps: '3 × 12–15' },
+      ],
+    },
+    {
+      title: 'Superset 4: Triceps ↔ Biceps',
+      exercises: [
+        { id: 'a-triceps-pushdown', name: 'Triceps Pushdown (Cable/Machine)', setsReps: '3 × 12–15' },
+        { id: 'a-biceps-curl', name: 'Biceps Curl Machine', setsReps: '3 × 10–12' },
+      ],
+    },
+    {
+      title: 'Superset 5: Quads ↔ Hamstrings',
+      exercises: [
+        { id: 'a-leg-press', name: 'Leg Press (Quads focus)', setsReps: '3–4 × 10–15' },
+        { id: 'a-leg-curl', name: 'Leg Curl Machine', setsReps: '3 × 12–15' },
+      ],
+    },
+    {
+      title: 'Superset 6: Leg Extension ↔ Optional Glute/Bridge',
+      exercises: [
+        { id: 'a-leg-extension', name: 'Leg Extension Machine', setsReps: '3 × 12–15' },
+        { id: 'a-glute-bridge', name: '(Optional) Glute Bridge / Hip Thrust', setsReps: 'Bodyweight' },
+      ],
+    },
+    {
+      title: 'Superset 7: Calves ↔ Optional Tibialis',
+      exercises: [
+        { id: 'a-calf-raise', name: 'Calf Raise (Machine or Leg Press)', setsReps: '3 × 15–20' },
+        { id: 'a-tibialis-raise', name: '(Optional) Tibialis Raise', setsReps: 'Bodyweight' },
+      ],
+    },
+    {
+      title: 'Optional Core',
+      exercises: [
+        { id: 'a-plank', name: 'Plank', setsReps: '3 × 30–60s' },
+      ],
+    },
+  ],
+};
+
+const WORKOUT_B = {
+  id: 'B',
+  name: 'Workout B',
+  title: 'Pull + Hams/Glutes',
+  supersets: [
+    {
+      title: 'Superset 1: Back ↔ Chest',
+      exercises: [
+        { id: 'b-seated-row', name: 'Seated Row', setsReps: '3–4 × 8–12' },
+        { id: 'b-chest-press', name: 'Chest Press Machine', setsReps: '3 × 8–12' },
+      ],
+    },
+    {
+      title: 'Superset 2: Lats ↔ Shoulders',
+      exercises: [
+        { id: 'b-lat-pulldown', name: 'Lat Pulldown', setsReps: '3–4 × 8–12' },
+        { id: 'b-shoulder-press', name: 'Shoulder Press', setsReps: '3 × 8–12' },
+      ],
+    },
+    {
+      title: 'Superset 3: Rear Delt ↔ Lateral Raise',
+      exercises: [
+        { id: 'b-rear-delt', name: 'Rear Delt Reverse Pec Deck', setsReps: '3 × 12–15' },
+        { id: 'b-lateral-raise', name: 'Lateral Raise Machine', setsReps: '3 × 12–15' },
+      ],
+    },
+    {
+      title: 'Superset 4: Biceps ↔ Triceps',
+      exercises: [
+        { id: 'b-biceps-curl', name: 'Biceps Curl Machine', setsReps: '3 × 10–12' },
+        { id: 'b-triceps-pushdown', name: 'Triceps Pushdown', setsReps: '3 × 12–15' },
+      ],
+    },
+    {
+      title: 'Superset 5: Hamstrings ↔ Quads',
+      exercises: [
+        { id: 'b-leg-curl', name: 'Leg Curl Machine', setsReps: '3 × 12–15' },
+        { id: 'b-leg-extension', name: 'Leg Extension Machine', setsReps: '3 × 12–15' },
+      ],
+    },
+    {
+      title: 'Superset 6: Glutes ↔ Leg Press',
+      exercises: [
+        { id: 'b-hip-thrust', name: '(Optional) Hip Thrust or Glute Bridge', setsReps: 'Bodyweight' },
+        { id: 'b-leg-press', name: 'Leg Press', setsReps: '3–4 × 10–15' },
+      ],
+    },
+    {
+      title: 'Superset 7: Lower Back ↔ Core',
+      exercises: [
+        { id: 'b-back-extensions', name: 'Back Extensions', setsReps: '3 × 12–15' },
+        { id: 'b-plank-crunch', name: 'Plank / Cable Crunch', setsReps: '3 × 12–15' },
+      ],
+    },
+  ],
+};
+
+// --- From components/Icons.tsx ---
+const ResetIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 0114.65 8.006m0 0L11.468 4.823m3.182 3.183h4.992m-4.993 0v-4.992" />
+  </svg>
+);
+const CheckIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+  </svg>
+);
+const DumbbellIcon = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12.75 3.03v.568c0 .334.148.65.405.864l1.068.89c.442.369.535 1.01.216 1.49l-.51.766a2.25 2.25 0 01-1.161.886l-.143.048a1.107 1.107 0 00-.57 1.664c.369.555.169 1.307-.427 1.605L9 13.125l.423 1.059a.956.956 0 01-1.652.928l-.679-.906a1.125 1.125 0 00-1.906.172L4.5 15.75l-.612.153M12.75 3.031a9 9 0 00-8.862 10.634l-1.18.295a1.125 1.125 0 00-1.059 1.213l.44 1.755A1.125 1.125 0 003.88 18.01l.442.11a1.125 1.125 0 001.213-1.059l.295-1.182a9 9 0 0010.634-8.862l.295-1.18a1.125 1.125 0 00-1.06-1.213l-1.755-.442a1.125 1.125 0 00-1.109.287l-.11.082a1.125 1.125 0 00-.287 1.11l.082.11a1.125 1.125 0 001.11.287l.11-.082a1.125 1.125 0 00.287-1.11l-.082-.11a1.125 1.125 0 00-1.11-.287l-.11.082" />
+    </svg>
+);
+const LinkIcon = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+    </svg>
+);
+
+// --- From components/Exercise.tsx ---
+const Exercise = ({ exercise, isCompleted, onToggle }) => {
+  return (
+    <div
+      onClick={() => onToggle(exercise.id)}
+      className={`
+        flex items-center p-3 rounded-lg cursor-pointer transition-all duration-300 ease-in-out
+        ${isCompleted ? 'bg-green-900/50 text-gray-500' : 'bg-gray-700/50 hover:bg-gray-700'}
+      `}
+    >
+      <div className={`flex-shrink-0 w-6 h-6 mr-4 flex items-center justify-center border-2 rounded-md transition-all duration-300
+        ${isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}
+      >
+        {isCompleted && <CheckIcon className="w-4 h-4 text-white" />}
+      </div>
+      <div className="flex-grow">
+        <p className={`font-medium ${isCompleted ? 'line-through' : 'text-gray-100'}`}>{exercise.name}</p>
+        <p className={`text-sm ${isCompleted ? 'line-through' : 'text-gray-400'}`}>{exercise.setsReps}</p>
+      </div>
+    </div>
+  );
+};
+
+// --- From components/Superset.tsx ---
+const Superset = ({ superset, completionState, onToggleExercise }) => {
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-gray-400 mb-3 border-b border-gray-700 pb-2">{superset.title}</h3>
+      <div className="relative pl-5">
+        {superset.exercises.length > 1 && (
+          <div className="absolute left-0 top-0 bottom-0 flex flex-col items-center w-5">
+              <div className="w-px h-full bg-gray-600"></div>
+              <LinkIcon className="w-5 h-5 text-blue-500 absolute top-1/2 -translate-y-1/2 bg-gray-800" />
+          </div>
+        )}
+        <div className="space-y-2">
+            {superset.exercises.map((exercise) => (
+            <Exercise
+                key={exercise.id}
+                exercise={exercise}
+                isCompleted={!!completionState[exercise.id]}
+                onToggle={onToggleExercise}
+            />
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- From components/Workout.tsx ---
+const Workout = ({ workoutData, completionState, onToggleExercise, onResetWorkout }) => {
+  const exerciseIds = workoutData.supersets.flatMap(s => s.exercises.map(e => e.id));
+  const totalExercises = exerciseIds.length;
+  const completedExercises = exerciseIds.filter(id => completionState[id]).length;
+  const progress = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
+
+  const handleResetClick = () => {
+    if (window.confirm(`Are you sure you want to reset progress for ${workoutData.name}?`)) {
+        onResetWorkout(exerciseIds);
+    }
+  };
+
+  return (
+    <div className="bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-500 ease-in-out">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+            <h2 className="text-2xl font-bold text-white">{workoutData.name}</h2>
+            <p className="text-sm text-blue-300">{workoutData.title}</p>
+        </div>
+        <button onClick={handleResetClick} className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors duration-200">
+            <ResetIcon className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-1">
+            <span className="text-sm font-medium text-gray-300">Progress</span>
+            <span className="text-sm font-medium text-gray-300">{completedExercises} / {totalExercises}</span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-2.5">
+          <div 
+            className="bg-green-500 h-2.5 rounded-full transition-all duration-500 ease-out" 
+            style={{ width: `${progress}%` }}>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {workoutData.supersets.map((superset, index) => (
+          <Superset
+            key={index}
+            superset={superset}
+            completionState={completionState}
+            onToggleExercise={onToggleExercise}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- From App.tsx ---
+const App = () => {
+  const [activeWorkout, setActiveWorkout] = useState('A');
+  const [completionState, setCompletionState] = useLocalStorage('workout-completion-state', {});
+
+  const workoutData = activeWorkout === 'A' ? WORKOUT_A : WORKOUT_B;
+
+  const handleToggleExercise = (exerciseId) => {
+    setCompletionState(prev => ({
+      ...prev,
+      [exerciseId]: !prev[exerciseId],
+    }));
+  };
+
+  const handleResetWorkout = (exerciseIds) => {
+    const newState = { ...completionState };
+    exerciseIds.forEach(id => {
+      newState[id] = false;
+    });
+    setCompletionState(newState);
+  };
+  
+  const handleResetAll = () => {
+      setCompletionState({});
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-gray-100 p-4 sm:p-6 md:p-8">
+      <div className="max-w-2xl mx-auto">
+        <header className="text-center mb-6 sm:mb-8">
+            <div className="flex items-center justify-center gap-3 mb-2">
+                <DumbbellIcon className="w-8 h-8 text-blue-400"/>
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
+                    Full-Body Workout Tracker
+                </h1>
+            </div>
+            <p className="text-gray-400">Your 2x/week minimalist workout plan.</p>
+        </header>
+
+        <div className="bg-gray-800 rounded-xl p-2 mb-6 sm:mb-8 flex space-x-2">
+          <button
+            onClick={() => setActiveWorkout('A')}
+            className={`w-full font-semibold py-3 rounded-lg transition-colors duration-300 ${activeWorkout === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+          >
+            Workout A
+          </button>
+          <button
+            onClick={() => setActiveWorkout('B')}
+            className={`w-full font-semibold py-3 rounded-lg transition-colors duration-300 ${activeWorkout === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+          >
+            Workout B
+          </button>
+        </div>
+
+        <main>
+          <Workout
+            key={activeWorkout}
+            workoutData={workoutData}
+            completionState={completionState}
+            onToggleExercise={handleToggleExercise}
+            onResetWorkout={handleResetWorkout}
+          />
+        </main>
+
+        <footer className="text-center mt-8">
+          <button 
+            onClick={handleResetAll}
+            className="text-sm text-gray-500 hover:text-red-400 transition-colors duration-300"
+          >
+            Reset All Progress
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+// --- From index.tsx ---
+const rootElement = document.getElementById('root');
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+    </script>
   </body>
 </html>
